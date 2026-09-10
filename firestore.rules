@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own business profile document,
+    // keyed by their own auth uid.
+    match /users/{uid} {
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // Customers, invoices, payments and notifications are all owned
+    // records — every document must carry an ownerId matching the
+    // authenticated user's uid, both on create and on every subsequent
+    // read/write.
+    match /customers/{customerId} {
+      allow read, update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    match /invoices/{invoiceId} {
+      allow read, update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    match /payments/{paymentId} {
+      allow read, update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

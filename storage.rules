@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Each business can only read/write logo files inside their own
+    // uid-scoped folder. Uploads are capped at 5MB and must be images.
+    match /logos/{uid}/{fileName} {
+      allow read: if true; // logos are shown on invoices/receipts which may be shared publicly
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

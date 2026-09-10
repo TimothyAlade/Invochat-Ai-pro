@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — InvoChat AI</title>
+<link rel="icon" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<style>
+  .logo-preview { width: 72px; height: 72px; border-radius: 16px; object-fit: cover; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; color: var(--color-primary); border: 1px solid var(--border); }
+  .theme-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+  .switch { position: relative; width: 44px; height: 24px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-slider { position: absolute; inset: 0; background: var(--border); border-radius: 999px; transition: .2s; cursor: pointer; }
+  .switch-slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .switch input:checked + .switch-slider { background: var(--color-primary); }
+  .switch input:checked + .switch-slider::before { transform: translateX(20px); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="logo.svg" alt=""><span>InvoChat AI</span></div>
+    <a class="nav-link" data-page="dashboard.html" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Dashboard</a>
+    <a class="nav-link" data-page="invoice.html" href="invoice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6M9 8h6M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg> New Invoice</a>
+    <a class="nav-link" data-page="customers.html" href="customers.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm11 8v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Customers</a>
+    <a class="nav-link" data-page="records.html" href="records.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18"/></svg> Records</a>
+    <a class="nav-link" data-page="profile.html" href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1"/></svg> Profile</a>
+    <a class="nav-link active" data-page="settings.html" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 0 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 0 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg> Settings</a>
+    <div class="sidebar-footer"><a class="nav-link" href="#" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Log out</a></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="flex items-center gap-12">
+        <button class="menu-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+        <div class="topbar-title">Settings</div>
+      </div>
+      <div class="topbar-actions"><div class="avatar" data-user-avatar>?</div></div>
+    </div>
+
+    <div class="content">
+      <div class="grid-2">
+        <div class="flex flex-col gap-16">
+          <div class="card">
+            <div class="section-title">Brand</div>
+            <div class="flex items-center gap-16 mb-16">
+              <div class="logo-preview" id="logo-preview">IB</div>
+              <div>
+                <input type="file" id="logo-input" accept="image/*" style="display:none;">
+                <button class="btn btn-secondary btn-sm" id="btn-upload-logo">Upload logo</button>
+                <div class="text-sm text-muted mt-8" id="storage-note" style="display:none;">Logo uploads require Firebase Storage (Blaze plan). Skipped gracefully.</div>
+              </div>
+            </div>
+            <form id="brand-form">
+              <div class="field"><label>Business slogan</label><input class="input" name="slogan" placeholder="e.g. Quality you can trust"></div>
+              <div class="field"><label>Invoice footer text</label><textarea class="input" name="invoiceFooter" rows="2"></textarea></div>
+              <div class="field"><label>Default invoice due days</label><input class="input" name="defaultDueDays" type="number" min="0" max="90"></div>
+              <button type="submit" class="btn btn-primary btn-block">Save brand settings</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-16">
+          <div class="card">
+            <div class="section-title">Appearance</div>
+            <div class="theme-toggle-row">
+              <div>
+                <div class="font-bold text-sm">Dark mode</div>
+                <div class="text-sm text-muted">Applies across the whole app</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="theme-switch">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Business information</div>
+            <div class="text-sm text-muted">Manage your name, business name, phone and address from your <a href="profile.html" style="color:var(--color-primary);font-weight:600;">Profile page</a>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="settings.js"></script>
+</body>
+</html>

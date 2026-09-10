@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Invoice — InvoChat AI</title>
+<link rel="icon" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<style>
+  .invoice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .line-item-row { display: grid; grid-template-columns: 1fr 70px 100px 100px 32px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .line-item-row input { padding: 9px 10px; font-size: 13.5px; }
+  .totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+  .totals-row.grand { font-size: 17px; font-weight: 800; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px; }
+  .preview-doc { background: #fff; color: #14171F; border-radius: var(--radius-lg); padding: 34px; border: 1px solid var(--border); font-size: 13.5px; }
+  .preview-doc .p-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 26px; }
+  .preview-doc table { width: 100%; border-collapse: collapse; margin: 18px 0; }
+  .preview-doc th { text-align: left; font-size: 11px; text-transform: uppercase; color: #6B7280; padding: 6px 4px; border-bottom: 2px solid #E4E7EF; }
+  .preview-doc td { padding: 8px 4px; border-bottom: 1px solid #EEF0F5; }
+  @media (max-width: 980px) { .invoice-grid { grid-template-columns: 1fr; } }
+  .autocomplete-box { position: relative; }
+  .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 20; max-height: 200px; overflow-y: auto; display: none; }
+  .autocomplete-list.open { display: block; }
+  .autocomplete-item { padding: 10px 14px; cursor: pointer; font-size: 13.5px; }
+  .autocomplete-item:hover { background: var(--surface-2); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="logo.svg" alt=""><span>InvoChat AI</span></div>
+    <a class="nav-link" data-page="dashboard.html" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Dashboard</a>
+    <a class="nav-link active" data-page="invoice.html" href="invoice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6M9 8h6M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg> New Invoice</a>
+    <a class="nav-link" data-page="customers.html" href="customers.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm11 8v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Customers</a>
+    <a class="nav-link" data-page="records.html" href="records.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18"/></svg> Records</a>
+    <a class="nav-link" data-page="profile.html" href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1"/></svg> Profile</a>
+    <a class="nav-link" data-page="settings.html" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 0 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 0 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg> Settings</a>
+    <div class="sidebar-footer">
+      <a class="nav-link" href="#" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Log out</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar no-print">
+      <div class="flex items-center gap-12">
+        <button class="menu-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+        <div class="topbar-title">New Invoice</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="avatar" data-user-avatar>?</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="invoice-grid">
+        <!-- FORM -->
+        <div class="card no-print">
+          <form id="invoice-form">
+            <div class="field autocomplete-box">
+              <label>Customer name</label>
+              <input class="input" id="customer-name" name="customerName" autocomplete="off" placeholder="Start typing a name…" required>
+              <div class="autocomplete-list" id="customer-suggestions"></div>
+            </div>
+            <div class="field">
+              <label>Customer phone</label>
+              <input class="input" id="customer-phone" name="customerPhone" type="tel" placeholder="080XXXXXXXX" required>
+            </div>
+
+            <div class="flex gap-12">
+              <div class="field" style="flex:1;">
+                <label>Invoice number</label>
+                <input class="input" id="invoice-number" name="invoiceNumber" readonly>
+              </div>
+              <div class="field" style="flex:1;">
+                <label>Due date</label>
+                <input class="input" id="due-date" name="dueDate" type="date" required>
+              </div>
+            </div>
+
+            <label style="display:block;font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--text-muted);">Line items</label>
+            <div id="line-items"></div>
+            <button type="button" class="btn btn-secondary btn-sm mt-8" id="add-line-item">+ Add item</button>
+
+            <div class="divider"></div>
+
+            <div class="field">
+              <label>Amount paid now</label>
+              <input class="input" id="amount-paid" name="amountPaid" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="field">
+              <label>Payment method</label>
+              <select class="input" name="paymentMethod">
+                <option>Cash</option><option>Bank Transfer</option><option>POS</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Notes (optional)</label>
+              <textarea class="input" name="notes" rows="2" placeholder="Any extra notes for this invoice…"></textarea>
+            </div>
+
+            <div class="flex gap-8 mt-16">
+              <button type="submit" class="btn btn-primary btn-block">Save Invoice</button>
+              <button type="button" class="btn btn-secondary" id="save-draft">Save as Draft</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- LIVE PREVIEW -->
+        <div>
+          <div class="flex gap-8 mb-16 no-print">
+            <button class="btn btn-secondary btn-sm" id="btn-print"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> Print</button>
+            <button class="btn btn-secondary btn-sm" id="btn-pdf"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg> Save PDF</button>
+            <button class="btn btn-primary btn-sm" id="btn-whatsapp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> WhatsApp</button>
+          </div>
+          <div class="preview-doc print-doc" id="invoice-preview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="invoice.js"></script>
+</body>
+</html>
