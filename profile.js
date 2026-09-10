@@ -1,5 +1,5 @@
 import { db } from "./firebase.js";
-import { doc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { requireAuth, formatNaira, formatDate, toast, openModal, closeModal, setCachedBusiness, getCachedBusiness } from "./app.js";
 
 let currentUser = null;
@@ -49,7 +49,7 @@ document.getElementById("edit-profile-form").addEventListener("submit", async (e
     address: form.address.value.trim()
   };
   try {
-    await updateDoc(doc(db, "users", currentUser.uid), updates);
+    await setDoc(doc(db, "users", currentUser.uid), updates, { merge: true });
     setCachedBusiness({ ...getCachedBusiness(), ...updates });
     toast("Profile updated", "success");
     closeModal("modal-edit-profile");

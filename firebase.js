@@ -10,7 +10,6 @@ import {
   browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3VYhOmwq4wKfhek-2BJPM29zX0YbKLxc",
@@ -27,15 +26,10 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Storage is optional — requires the Blaze plan. If the project is on the
-// Spark plan, uploads will fail gracefully while the rest of the app works.
-export let storage = null;
+// NOTE: This build does not use Firebase Storage (which requires the paid
+// Blaze plan). Business logos are instead resized client-side and stored
+// as base64 data URIs directly on the user's Firestore document — see
+// settings.js. If you later upgrade to Blaze and want full-resolution
+// asset storage, re-add `getStorage` here and wire it back into settings.js.
 
-try {
-  storage = getStorage(app);
-} catch (e) {
-  console.warn("Firebase Storage unavailable:", e.message);
-}
-
-// Keep users signed in across visits.
 setPersistence(auth, browserLocalPersistence).catch(() => {});

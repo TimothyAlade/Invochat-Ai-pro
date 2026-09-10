@@ -1,6 +1,12 @@
-import { db, storage } from "./firebase.js";
-import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { db } from "./firebase.js";
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { requireAuth, toast, setCachedBusiness, getCachedBusiness } from "./app.js";
+
+// Max size (in characters) we'll allow for a base64 logo string before
+// refusing it. Firestore documents cap out at 1MB total; we stay well
+// under that so the rest of the business document always has room.
+const MAX_LOGO_BASE64_LENGTH = 250000; // ~180KB of actual image data
+const LOGO_MAX_DIMENSION = 240; // px, on the longest side
 
 let currentUser = null;
 
@@ -36,7 +42,7 @@ document.getElementById("brand-form").addEventListener("submit", async (e) => {
     defaultDueDays: Number(form.defaultDueDays.value) || 7
   };
   try {
-    await updateDoc(doc(db, "users", currentUser.uid), updates);
+    await setDoc(doc(db, "users", currentUser.uid), updates, { merge: true });
     setCachedBusiness({ ...getCachedBusiness(), ...updates });
     toast("Brand settings saved", "success");
   } catch (err) {
@@ -44,7 +50,11 @@ document.getElementById("brand-form").addEventListener("submit", async (e) => {
   }
 });
 
-/* ---------- Logo upload — fails gracefully without Blaze/Storage ---------- */
+/* ---------- Logo upload — no Firebase Storage / Blaze plan required ----------
+   The image is resized on-device with a canvas, compressed to JPEG, and
+   saved as a base64 data URI directly on the user's Firestore document.
+   This works entirely on the free Spark plan. It's only suitable for a
+   small logo thumbnail, not full-resolution photos. ------------------------ */
 document.getElementById("btn-upload-logo").addEventListener("click", () => {
   document.getElementById("logo-input").click();
 });
@@ -53,26 +63,79 @@ document.getElementById("logo-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  if (!storage) {
-    document.getElementById("storage-note").style.display = "block";
-    toast("Storage isn't set up on this Firebase plan. Logo upload skipped.", "info");
+  if (!file.type.startsWith("image/")) {
+    toast("Please choose an image file", "error");
     return;
   }
 
+  const uploadBtn = document.getElementById("btn-upload-logo");
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = "Processing…";
+
   try {
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js");
-    const fileRef = ref(storage, `logos/${currentUser.uid}/${Date.now()}-${file.name}`);
-    await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
+    const dataUrl = await resizeAndCompressImage(file, LOGO_MAX_DIMENSION);
 
-    await updateDoc(doc(db, "users", currentUser.uid), { logoUrl: url });
-    setCachedBusiness({ ...getCachedBusiness(), logoUrl: url });
+    if (dataUrl.length > MAX_LOGO_BASE64_LENGTH) {
+      toast("That image is still too large after compression — try a simpler image.", "error");
+      return;
+    }
 
-    document.getElementById("logo-preview").innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">`;
+    await setDoc(doc(db, "users", currentUser.uid), { logoUrl: dataUrl }, { merge: true });
+    setCachedBusiness({ ...getCachedBusiness(), logoUrl: dataUrl });
+
+    document.getElementById("logo-preview").innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">`;
     toast("Logo updated", "success");
   } catch (err) {
-    console.warn("Storage upload failed:", err.message);
-    document.getElementById("storage-note").style.display = "block";
-    toast("Couldn't upload logo — Storage may not be enabled (requires Blaze plan).", "error");
+    console.warn("Logo processing failed:", err.message);
+    toast("Couldn't process that image. Try a different file.", "error");
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload logo";
+    e.target.value = "";
   }
 });
+
+/**
+ * Resizes an image file to fit within maxDimension x maxDimension
+ * (preserving aspect ratio), then returns it as a compressed JPEG
+ * base64 data URI. Quality steps down automatically if the result
+ * is still too large.
+ */
+function resizeAndCompressImage(file, maxDimension) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not decode image"));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#FFFFFF"; // flattens transparency onto white for JPEG
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.85;
+        let dataUrl = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length > MAX_LOGO_BASE64_LENGTH && quality > 0.3) {
+          quality -= 0.15;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+        resolve(dataUrl);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}

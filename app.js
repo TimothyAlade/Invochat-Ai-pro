@@ -5,7 +5,7 @@
 
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 /* ---------- Formatting ---------- */
 export function formatNaira(amount) {
@@ -106,8 +106,28 @@ export function requireAuth(callback) {
     }
     if (!cachedBusiness) {
       try {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        cachedBusiness = snap.exists() ? snap.data() : {};
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          cachedBusiness = snap.data();
+        } else {
+          // Self-heal: this account has no business profile document yet
+          // (e.g. it was created outside the normal signup flow). Create
+          // a minimal one now so later updateDoc/setDoc calls never fail.
+          cachedBusiness = {
+            ownerName: user.displayName || "",
+            businessName: "",
+            phone: "",
+            email: user.email || "",
+            address: "",
+            logoUrl: "",
+            slogan: "",
+            invoiceFooter: "Thank you for your business!",
+            defaultDueDays: 7,
+            createdAt: serverTimestamp()
+          };
+          await setDoc(ref, cachedBusiness, { merge: true });
+        }
       } catch (e) {
         cachedBusiness = {};
       }

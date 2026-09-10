@@ -24,8 +24,7 @@ Pure static site — no build step, no bundler, no framework:
 
 - HTML5, CSS3, vanilla JavaScript (ES modules)
 - Firebase Authentication (email/password)
-- Firestore (data storage)
-- Firebase Storage (optional — for logo uploads)
+- Firestore (data storage, including business logos as compressed base64 images — no paid Storage plan required)
 
 ## 📂 Project structure
 
@@ -52,7 +51,6 @@ InvoChatAI/
 ├── settings.js                         Brand settings + logo upload
 ├── logo.svg                             App logo
 ├── firestore.rules                       Firestore security rules
-├── storage.rules                          Storage security rules
 └── README.md
 ```
 
@@ -61,13 +59,14 @@ InvoChatAI/
 1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
 2. Enable **Authentication → Email/Password**.
 3. Create a **Firestore** database (production mode).
-4. (Optional, requires the **Blaze** plan) Enable **Storage** if you want logo uploads — the app works fine without it and fails gracefully.
-5. In Project Settings → Your apps, register a **Web app** and copy the config object.
-6. Paste that config into `firebaseConfig` inside `firebase.js`.
-7. Deploy the rules:
+4. In Project Settings → Your apps, register a **Web app** and copy the config object.
+5. Paste that config into `firebaseConfig` inside `firebase.js`.
+6. Deploy the rules:
    ```bash
-   firebase deploy --only firestore:rules,storage:rules
+   firebase deploy --only firestore:rules
    ```
+
+This entire setup runs on Firebase's free **Spark** plan — no Storage/Blaze upgrade is required. Business logos are resized in the browser and saved as compressed base64 images directly on the Firestore user document (see "Known limitations" below).
 
 ### Firestore collections
 
@@ -107,7 +106,7 @@ firebase deploy
 ## ⚠️ Known limitations of this build
 
 - **PDF export** uses the browser's native print dialog rather than a dedicated PDF library, per the "no build tools / no npm" constraint — it produces a clean PDF but isn't a one-click silent download.
-- **Logo cropping** UI isn't included; uploaded images are used as-is. Uploading requires the Storage service (Blaze plan) and fails gracefully without it.
+- **Logos are small thumbnails, not full-resolution files.** To stay on the free Spark plan, logos are resized to ~240px and compressed to JPEG, then stored as a base64 string on the Firestore user document (capped well under Firestore's 1MB document limit). This keeps things free but isn't suited to large or highly detailed images. Logo cropping UI isn't included; uploaded images are auto-resized as-is.
 - **Notifications** are currently computed live from invoice due-dates on the dashboard rather than stored as persistent `notifications` documents — the collection exists in the rules for future use.
 
 ## 📄 License
